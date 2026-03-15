@@ -954,6 +954,7 @@ Item {
                         color: Theme.bgCard
                         border.width: 1
                         border.color: Theme.border
+                        visible: backend.debugMode
 
                         Column {
                             id: debugCol
