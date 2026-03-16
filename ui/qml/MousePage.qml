@@ -427,8 +427,8 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: {
                                     var lvl = backend.batteryLevel
-                                    if (lvl < 20) return Qt.rgba(0.88, 0.2, 0.2, 0.18)
-                                    if (lvl <= 69) return Qt.rgba(0.9, 0.75, 0.1, 0.18)
+                                    if (lvl <= 20) return Qt.rgba(0.88, 0.2, 0.2, 0.18)
+                                    if (lvl <= 40) return Qt.rgba(0.9, 0.56, 0.1, 0.18)
                                     return Qt.rgba(0, 0.83, 0.67, 0.12)
                                 }
 
@@ -438,8 +438,10 @@ Item {
                                     spacing: 4
 
                                     Text {
-                                        text: "🔋"
-                                        font { pixelSize: 11 }
+                                        text: backend.batteryLevel <= 20 ? "Low"
+                                              : backend.batteryLevel <= 40 ? "Med" : "Bat"
+                                        font { family: Theme.fontFamily; pixelSize: 10 }
+                                        color: Theme.textDim
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                     Text {
@@ -447,8 +449,8 @@ Item {
                                         font { family: Theme.fontFamily; pixelSize: 11; bold: true }
                                         color: {
                                             var lvl = backend.batteryLevel
-                                            if (lvl < 20) return "#e05555"
-                                            if (lvl <= 69) return "#e0b840"
+                                            if (lvl <= 20) return "#e05555"
+                                            if (lvl <= 40) return "#e09045"
                                             return Theme.accent
                                         }
                                     }

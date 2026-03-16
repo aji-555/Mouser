@@ -49,6 +49,22 @@ if sys.platform == "win32":
     WNDENUMPROC = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
     user32.EnumChildWindows.argtypes = [wt.HWND, WNDENUMPROC, wt.LPARAM]
     user32.EnumChildWindows.restype = wt.BOOL
+    user32.EnumWindows.argtypes = [WNDENUMPROC, wt.LPARAM]
+    user32.EnumWindows.restype = wt.BOOL
+    user32.IsWindowVisible.argtypes = [wt.HWND]
+    user32.IsWindowVisible.restype = wt.BOOL
+    user32.GetWindowTextW.argtypes = [wt.HWND, ctypes.c_wchar_p, ctypes.c_int]
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.GetWindowTextLengthW.argtypes = [wt.HWND]
+    user32.GetWindowTextLengthW.restype = ctypes.c_int
+
+    def _get_window_title(hwnd) -> str:
+        length = user32.GetWindowTextLengthW(hwnd)
+        if not length:
+            return ""
+        buf = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(hwnd, buf, length + 1)
+        return buf.value
 
     def _exe_from_pid(pid: int) -> str | None:
         hproc = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
@@ -69,19 +85,52 @@ if sys.platform == "win32":
         result = [None]
 
         def _enum_cb(child_hwnd, _lparam):
-            cls = ctypes.create_unicode_buffer(256)
-            user32.GetClassNameW(child_hwnd, cls, 256)
-            if cls.value == "Windows.UI.Core.CoreWindow":
-                child_pid = wt.DWORD()
-                user32.GetWindowThreadProcessId(child_hwnd, ctypes.byref(child_pid))
-                if child_pid.value != host_pid.value:
-                    exe = _exe_from_pid(child_pid.value)
-                    if exe:
-                        result[0] = exe
-                        return False
+            child_pid = wt.DWORD()
+            user32.GetWindowThreadProcessId(child_hwnd, ctypes.byref(child_pid))
+            if child_pid.value != host_pid.value:
+                exe = _exe_from_pid(child_pid.value)
+                if exe and exe.lower() != "applicationframehost.exe":
+                    result[0] = exe
+                    return False
             return True
 
         user32.EnumChildWindows(hwnd, WNDENUMPROC(_enum_cb), 0)
+        return result[0]
+
+    # Window classes that belong to genuine explorer.exe usage
+    _EXPLORER_CLASSES = frozenset({
+        "CabinetWClass",           # File Explorer windows
+        "Shell_TrayWnd",           # Taskbar
+        "Shell_SecondaryTrayWnd",  # Taskbar on secondary monitors
+        "Progman",                 # Desktop
+        "WorkerW",                 # Desktop worker
+    })
+
+    def _get_window_class(hwnd) -> str:
+        cls = ctypes.create_unicode_buffer(256)
+        user32.GetClassNameW(hwnd, cls, 256)
+        return cls.value
+
+    def _find_uwp_app_global() -> str | None:
+        """Enumerate all top-level windows to find a UWP app behind an overlay."""
+        result = [None]
+
+        def _enum_cb(hwnd, _lparam):
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            pid = wt.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            if not pid.value:
+                return True
+            exe = _exe_from_pid(pid.value)
+            if exe and exe.lower() == "applicationframehost.exe":
+                real = _resolve_uwp_child(hwnd)
+                if real:
+                    result[0] = real
+                    return False
+            return True
+
+        user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
         return result[0]
 
     def get_foreground_exe() -> str | None:
@@ -96,10 +145,22 @@ if sys.platform == "win32":
         exe = _exe_from_pid(pid.value)
         if not exe:
             return None
-        if exe.lower() == "applicationframehost.exe":
+        exe_lower = exe.lower()
+        if exe_lower == "applicationframehost.exe":
             real = _resolve_uwp_child(hwnd)
-            if real:
-                return real
+            # If we can't resolve the real app (e.g. fullscreen UWP),
+            # return None so the detector keeps the last known profile.
+            return real
+        if exe_lower == "explorer.exe":
+            wc = _get_window_class(hwnd)
+            if wc not in _EXPLORER_CLASSES:
+                title = _get_window_title(hwnd)
+                print(f"[AppDetect] FG: explorer.exe class={wc} title='{title}'")
+                real = _resolve_uwp_child(hwnd)
+                if real:
+                    return real
+                real = _find_uwp_app_global()
+                return real  # None keeps last profile
         return exe
 
 elif sys.platform == "darwin":

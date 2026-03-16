@@ -20,7 +20,6 @@ No telemetry. No cloud. No Logitech account required.
 - **DPI / pointer speed control** — slider from 200–8000 DPI with quick presets, synced to the device via HID++
 - **Scroll direction inversion** — independent toggles for vertical and horizontal scroll
 - **Gesture button support** — full HID++ 2.0 divert on Bluetooth (no Logitech software needed)
-- **Battery monitor** — reads battery level via HID++ on connect and refreshes every 5 minutes; displayed as a 🔋 colour-coded badge (green above 70%, yellow 20–69%, red below 20%) next to the connection status
 - **Auto-reconnection** — automatically detects when the mouse is turned off/on or disconnected/reconnected and restores full functionality without restarting the app
 - **Live connection status** — the UI shows a real-time "Connected" / "Not Connected" badge that updates as the mouse connects or disconnects
 - **Modern Qt Quick UI** — dark Material theme with interactive mouse diagram and per-button action picker
