@@ -61,6 +61,7 @@ class Backend(QObject):
     _batteryChangeRequest = Signal(int)
     _debugMessageRequest = Signal(str)
     _gestureEventRequest = Signal(object)
+    _smartShiftReadRequest = Signal(str)
 
     def __init__(self, engine=None, parent=None):
         super().__init__(parent)
@@ -101,6 +102,8 @@ class Backend(QObject):
             self._handleDebugMessage, Qt.QueuedConnection)
         self._gestureEventRequest.connect(
             self._handleGestureEvent, Qt.QueuedConnection)
+        self._smartShiftReadRequest.connect(
+            self._handleSmartShiftRead, Qt.QueuedConnection)
 
         # Wire engine callbacks
         if engine:
@@ -113,6 +116,8 @@ class Backend(QObject):
                 engine.set_debug_callback(self._onEngineDebugMessage)
             if hasattr(engine, "set_gesture_event_callback"):
                 engine.set_gesture_event_callback(self._onEngineGestureEvent)
+            if hasattr(engine, "set_smart_shift_read_callback"):
+                engine.set_smart_shift_read_callback(self._onEngineSmartShiftRead)
             if hasattr(engine, "set_debug_enabled"):
                 engine.set_debug_enabled(self.debugMode)
             self._mouse_connected = bool(getattr(engine, "device_connected", False))
@@ -729,6 +734,16 @@ class Backend(QObject):
     def _onEngineGestureEvent(self, event):
         """Called from engine/hook thread — posts to Qt main thread."""
         self._gestureEventRequest.emit(event)
+
+    def _onEngineSmartShiftRead(self, mode):
+        """Called from engine thread — posts to Qt main thread."""
+        self._smartShiftReadRequest.emit(mode)
+
+    @Slot(str)
+    def _handleSmartShiftRead(self, mode):
+        """Runs on Qt main thread — updates config and notifies QML."""
+        self._cfg.setdefault("settings", {})["smart_shift_mode"] = mode
+        self.smartShiftChanged.emit()
 
     @Slot(str)
     def _handleProfileSwitch(self, profile_name):

@@ -273,21 +273,47 @@ class Engine:
             ).start()
 
     def _battery_poll_loop(self, stop_event):
-        """Read battery on connect and refresh it periodically until disconnected."""
+        """Read battery and smart shift mode periodically until disconnected."""
+        _battery_poll_interval = 300   # seconds between battery reads
+        _ss_poll_interval = 15         # seconds between scroll-mode reads
+        _last_battery = time.time() - _battery_poll_interval  # fire immediately
+        _last_ss = time.time() - _ss_poll_interval            # fire immediately
+        _last_ss_mode = None
+
         if stop_event.wait(1):
             return
         while not stop_event.is_set():
+            now = time.time()
             hg = self.hook._hid_gesture
             if hg:
-                level = hg.read_battery()
-                if stop_event.is_set():
-                    return
-                if level is not None and self._battery_read_cb:
-                    try:
-                        self._battery_read_cb(level)
-                    except Exception:
-                        pass
-            if stop_event.wait(300):
+                if now - _last_battery >= _battery_poll_interval:
+                    _last_battery = now
+                    level = hg.read_battery()
+                    if stop_event.is_set():
+                        return
+                    if level is not None and self._battery_read_cb:
+                        try:
+                            self._battery_read_cb(level)
+                        except Exception:
+                            pass
+
+                if now - _last_ss >= _ss_poll_interval and hg.smart_shift_supported:
+                    _last_ss = now
+                    ss_mode = hg.read_smart_shift()
+                    if stop_event.is_set():
+                        return
+                    if ss_mode is not None:
+                        if ss_mode != _last_ss_mode:
+                            print(f"[Engine] Scroll mode: {ss_mode}"
+                                  + (" (changed)" if _last_ss_mode is not None else ""))
+                            _last_ss_mode = ss_mode
+                        if self._smart_shift_read_cb:
+                            try:
+                                self._smart_shift_read_cb(ss_mode)
+                            except Exception:
+                                pass
+
+            if stop_event.wait(5):
                 return
 
     def set_battery_callback(self, cb):
