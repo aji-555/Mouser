@@ -38,6 +38,11 @@ No telemetry. No cloud. No Logitech account required.
 - **Live connection status** — real-time "Connected" / "Not Connected" badge in the UI
 - **Device-aware UI** — interactive MX Master diagram with clickable hotspots; generic fallback for other models
 
+### 🌐 Multi-Language UI
+- **English / Simplified Chinese / Traditional Chinese** - switch instantly in-app, no restart required
+- Language preference is automatically saved to `config.json` and restored on next launch
+- Covers all major UI surfaces: navigation, mouse page, settings page, dialogs, system tray/menu bar, and permission prompts
+
 ### 🛡️ Privacy First
 - **Fully local** — config is a JSON file, all processing happens on your machine
 - **System tray / menu bar** — runs quietly in the background with quick access from the tray
@@ -489,6 +494,7 @@ This project is licensed under the [MIT License](LICENSE).
 - **[@awkure](https://github.com/awkure)** — cross-platform login startup (Windows registry + macOS LaunchAgent), single-instance guard, start minimized option, and MX Master 4 detection
 - **[@hieshima](https://github.com/hieshima)** — Linux support (evdev + HID++ + uinput), mode shift button mapping, Smart Shift toggle, and custom keyboard shortcut support
 - **[@pavelzaichyk](https://github.com/pavelzaichyk)** — Next Tab and Previous Tab browser actions
+- **[@nellwhoami](https://github.com/nellwhoami)** - Multi-language UI system (English, Simplified Chinese, Traditional Chinese) and Page Up/Down/Home/End navigation actions
 
 ---
 
