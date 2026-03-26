@@ -16,6 +16,8 @@ from core.app_detector import AppDetector
 from core.logi_devices import clamp_dpi
 
 HSCROLL_ACTION_COOLDOWN_S = 0.35
+HSCROLL_VOLUME_COOLDOWN_S = 0.06
+_VOLUME_ACTIONS = {"volume_up", "volume_down"}
 
 
 class Engine:
@@ -133,7 +135,8 @@ class Engine:
             threshold = self._hscroll_threshold()
             now = getattr(event, "timestamp", None) or time.time()
 
-            if now - state["last_fire_at"] < HSCROLL_ACTION_COOLDOWN_S:
+            cooldown = HSCROLL_VOLUME_COOLDOWN_S if action_id in _VOLUME_ACTIONS else HSCROLL_ACTION_COOLDOWN_S
+            if now - state["last_fire_at"] < cooldown:
                 state["accum"] = 0.0
                 return
 
