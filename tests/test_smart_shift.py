@@ -280,6 +280,63 @@ class EngineSmartShiftTests(unittest.TestCase):
             engine.start()
         hg.set_smart_shift.assert_not_called()
 
+    def test_reconnect_reapplies_saved_smart_shift(self):
+        """_apply_device_settings pushes saved SmartShift to device (reconnect path)."""
+        engine = self._make_engine({
+            "smart_shift_mode": "ratchet",
+            "smart_shift_enabled": False,
+            "smart_shift_threshold": 30,
+        })
+        hg = Mock(smart_shift_supported=True)
+        engine.hook._hid_gesture = hg
+        with patch("time.sleep"):
+            engine._apply_device_settings("reconnect")
+        hg.set_smart_shift.assert_called_with("ratchet", False, 30)
+
+    def test_on_connection_change_spawns_apply_settings_thread(self):
+        """_on_connection_change(True) must start an ApplySettings thread in addition to BatteryPoll."""
+        engine = self._make_engine()
+        with patch("core.engine.threading.Thread") as thread_cls:
+            thread_cls.return_value = Mock(start=Mock())
+            engine._on_connection_change(True)
+        thread_names = [c.kwargs.get("name") for c in thread_cls.call_args_list]
+        self.assertIn("BatteryPoll", thread_names)
+        self.assertIn("ApplySettings", thread_names)
+
+    def test_apply_device_settings_retries_on_failure(self):
+        """On write failure (e.g. IOReturnBadArgument right after wake), retry once."""
+        engine = self._make_engine({
+            "smart_shift_enabled": True,
+            "smart_shift_threshold": 25,
+        })
+        hg = Mock(smart_shift_supported=True)
+        # First call fails (device not ready), second succeeds
+        hg.set_smart_shift.side_effect = [False, True]
+        engine.hook._hid_gesture = hg
+        with patch("time.sleep"):
+            engine._apply_device_settings("reconnect")
+        self.assertEqual(hg.set_smart_shift.call_count, 2)
+
+    def test_apply_device_settings_notifies_ui_with_saved_state(self):
+        """UI must show the saved config, not stale hardware state read by the poll."""
+        engine = self._make_engine({
+            "smart_shift_mode": "ratchet",
+            "smart_shift_enabled": False,
+            "smart_shift_threshold": 30,
+        })
+        hg = Mock(smart_shift_supported=True)
+        engine.hook._hid_gesture = hg
+        received = []
+        engine.set_smart_shift_read_callback(received.append)
+        with patch("time.sleep"):
+            engine._apply_device_settings("startup")
+        self.assertEqual(len(received), 1)
+        self.assertEqual(received[0], {
+            "mode": "ratchet",
+            "enabled": False,
+            "threshold": 30,
+        })
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Backend — SmartShift properties, slots, and device read sync
