@@ -285,7 +285,7 @@ Item {
                             Layout.fillWidth: true
 
                             Text {
-                                text: "SmartShift"
+                                text: s["scroll.smart_shift"]
                                 font {
                                     family: uiState.fontFamily
                                     pixelSize: 16
@@ -295,7 +295,7 @@ Item {
                             }
 
                             Text {
-                                text: "Automatically switches the scroll wheel from line-by-line scrolling to hyper-fast scrolling when you scroll faster."
+                                text: s["scroll.smart_shift_desc"]
                                 font {
                                     family: uiState.fontFamily
                                     pixelSize: 12
@@ -322,7 +322,7 @@ Item {
                         spacing: 8
 
                         Text {
-                            text: "SENSITIVITY VALUE"
+                            text: s["scroll.sensitivity_value"]
                             font {
                                 family: uiState.fontFamily
                                 pixelSize: 11
@@ -398,7 +398,7 @@ Item {
                         spacing: 8
 
                         Text {
-                            text: "SCROLL MODE"
+                            text: s["scroll.scroll_mode_section"]
                             font {
                                 family: uiState.fontFamily
                                 pixelSize: 11
