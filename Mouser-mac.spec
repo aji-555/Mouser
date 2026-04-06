@@ -80,8 +80,8 @@ app = BUNDLE(
     info_plist={
         "CFBundleDisplayName": "Mouser",
         "CFBundleName": "Mouser",
-        "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "1.0.0",
+        "CFBundleShortVersionString": "3.5.0",
+        "CFBundleVersion": "3.5.0",
         "LSMinimumSystemVersion": "12.0",
         "LSUIElement": True,
         "NSHighResolutionCapable": True,
